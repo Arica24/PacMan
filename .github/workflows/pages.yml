@@ -1,0 +1,40 @@
+name: Deploy game to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find game files
+        id: game
+        run: |
+          game_file=$(find . -path '*/dist/index.html' -print -quit)
+          if [ -z "$game_file" ]; then
+            echo "Game files missing: upload the dist folder."
+            exit 1
+          fi
+          echo "folder=$(dirname "$game_file")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.game.outputs.folder }}
+
+      - name: Publish game
+        id: deployment
+        uses: actions/deploy-pages@v4
